@@ -1,0 +1,115 @@
+#!/bin/guile
+!#
+(use-modules (jaft functs))
+
+(define args (command-line))
+(define (parse_quotes in)
+  (if (contains "\"" in)
+      (str
+        (: in 0 (contains "\"" in))
+        "\\\\\\\""
+        (parse_quotes (: in (++ (contains "\"" in)))))
+    in))
+(define tabstr
+  (let ([n (if (== (len args) 2) 1 2)])
+    (cond
+     ;; uri (gotoSW)
+     [(== (!! args n) "0")                   "uri "]
+     ;; event NEW_TAB (goto)
+     [(== (!! args n) "1")         "event NEW_TAB "]
+     ;; event NEW_TAB_NEXT (gotoNext)
+     [(== (!! args n) "2")    "event NEW_TAB_NEXT "]
+     ;; event NEW_BG_TAB (gotoBG)
+     [(== (!! args n) "3")      "event NEW_BG_TAB "]
+     ;; event NEW_BG_TAB_NEXT (gotoNextBG)
+     [(== (!! args n) "4") "event NEW_BG_TAB_NEXT "]
+     [else "ERROR: No identifying number supplied!"])))
+
+(cond
+ [(== (len args) 2)                                 (begin
+                                                      (print (: tabstr 0 -1))
+                                                      (exit))]
+ [(== tabstr "ERROR: No identifying number supplied!") (exit)])
+
+(define origInput (parse_quotes (!! args 1)))
+(define (chooseWhichtoPrint tbS oStr oI)
+  (if (== tbS "uri ")
+      (print (str tbS oStr origInput))
+    (print (str tabstr #\" oStr origInput #\"))))
+
+(when (or
+        (== (contains "file://"           origInput) 0)
+        (== (contains "localhost/"        origInput) 0)
+        (== (contains "localhost:"        origInput) 0)
+        (== (contains "http://localhost/" origInput) 0)
+        (== (contains "http://localhost:" origInput) 0)
+        (== origInput "localhost"))
+  (chooseWhichtoPrint tabstr "" origInput)
+  ;; (if (== tabstr "uri ")
+  ;;     (print (str tabstr origInput))
+  ;;   (print (str tabstr #\" origInput #\")))
+  (exit))
+
+(define edit origInput)
+
+(when (== (contains "http://" origInput) 0)
+  (if (not (== (contains " " origInput) 7))
+      (set! edit (: origInput 7))
+    (begin
+      (chooseWhichtoPrint tabstr "http://www.google.com/search?q=" origInput)
+      (exit))))
+
+(cond
+ [(== (contains "www." edit) 0)
+       (if (not (== (contains " " edit) 4))
+           (set! edit (: edit 4))
+         (begin
+           (chooseWhichtoPrint tabstr "http://www.google.com/search?q=" origInput)
+           (exit)))]
+ [(|| (== (contains "www1." edit) 0)
+      (== (contains "www2." edit) 0)
+      (== (contains "www3." edit) 0))
+       (if (not (== (contains " " edit) 5))
+           (set! edit (: edit 5))
+         (begin
+           (chooseWhichtoPrint tabstr "http://www.google.com/search?q=" origInput)
+           (exit)))])
+
+(define topLevelDomains (list ".aero" ".asia" ".biz" ".cat" ".com" ".coop" ".info" ".int" ".jobs" ".mobi" ".museum" ".name" ".net" ".org" ".post" ".pro" ".tel" ".travel" ".xxx" ".edu" ".gov" ".mil" ".ac" ".ad" ".ae" ".af" ".ag" ".ai" ".al" ".am" ".an" ".ao" ".aq" ".ar" ".as" ".at" ".au" ".aw" ".ax" ".az" ".ba" ".bb" ".bd" ".be" ".bf" ".bg" ".bh" ".bi" ".bj" ".bm" ".bn" ".bo" ".br" ".bs" ".bt" ".bv" ".bw" ".by" ".bz" ".ca" ".cc" ".cd" ".cf" ".cg" ".ch" ".ci" ".ck" ".cl" ".cm" ".cn" ".co" ".cr" ".cs" ".cu" ".cv" ".cx" ".cy" ".cz" ".dd" ".de" ".dj" ".dk" ".dm" ".do" ".dz" ".ec" ".ee" ".eg" ".eh" ".er" ".es" ".et" ".eu" ".fi" ".fj" ".fk" ".fm" ".fo" ".fr" ".ga" ".gb" ".gd" ".ge" ".gf" ".gg" ".gh" ".gi" ".gl" ".gm" ".gn" ".gp" ".gq" ".gr" ".gs" ".gt" ".gu" ".gw" ".gy" ".hk" ".hm" ".hn" ".hr" ".ht" ".hu" ".id" ".ie" ".il" ".im" ".in" ".io" ".iq" ".ir" ".is" ".it" ".je" ".jm" ".jo" ".jp" ".ke" ".kg" ".kh" ".ki" ".km" ".kn" ".kp" ".kr" ".kw" ".ky" ".kz" ".la" ".lb" ".lc" ".li" ".lk" ".lr" ".ls" ".lt" ".lu" ".lv" ".ly" ".ma" ".mc" ".md" ".me" ".mg" ".mh" ".mk" ".ml" ".mm" ".mn" ".mo" ".mp" ".mq" ".mr" ".ms" ".mt" ".mu" ".mv" ".mw" ".mx" ".my" ".mz" ".na" ".nc" ".ne" ".nf" ".ng" ".ni" ".nl" ".no" ".np" ".nr" ".nu" ".nz" ".om" ".pa" ".pe" ".pf" ".pg" ".ph" ".pk" ".pl" ".pm" ".pn" ".pr" ".ps" ".pt" ".pw" ".py" ".qa" ".re" ".ro" ".rs" ".ru" ".rw" ".sa" ".sb" ".sc" ".sd" ".se" ".sg" ".sh" ".si" ".sj" ".sk" ".sl" ".sm" ".sn" ".so" ".sr" ".ss" ".st" ".su" ".sv" ".sx" ".sy" ".sz" ".tc" ".td" ".tf" ".tg" ".th" ".tj" ".tk" ".tl" ".tm" ".tn" ".to" ".tp" ".tr" ".tt" ".tv" ".tw" ".tz" ".ua" ".ug" ".uk" ".us" ".uy" ".uz" ".va" ".vc" ".ve" ".vg" ".vi" ".vn" ".vu" ".wf" ".ws" ".ye" ".yt" ".yu" ".za" ".zm" ".zw"))
+
+(map (lambda (tld)
+       (define test #f)
+       (define domain #f)
+       (define end #f)
+       (when (contains tld edit)
+         (cond
+          [(endswith tld edit)
+                (set! test edit)                                       ; Gets everything before end of this current top-level domain
+                (set! domain (: edit 0 (invert (len tld))))            ; Gets the sub-domain of the current top-level domain
+                (set! end #t)]
+          [(contains (str tld #\/) edit)
+                (set! test
+                   (: edit (-- (+                                      ; Gets everything before end of this current top-level domain
+                                 (contains (str tld #\/) edit)
+                                 (len (str tld #\/))))))
+                (set! domain (: edit 0 (contains (str tld #\/) edit))) ; Gets the sub-domain of the current top-level domain
+                (set! end #t)])
+
+         (when end
+           (cond
+            [(contains " " domain)
+                  (chooseWhichtoPrint
+                    tabstr
+                    "http://www.google.com/search?q="
+                    origInput)
+                  (exit)]
+            [(|| (contains "-." domain) (contains ".-" domain))
+                  (chooseWhichtoPrint
+                    tabstr
+                    "http://www.google.com/search?q="
+                    origInput)
+                  (exit)]
+            [else (chooseWhichtoPrint tabstr "" origInput)
+                  (exit)])))) topLevelDomains)
+
+(chooseWhichtoPrint tabstr "http://www.google.com/search?q=" origInput)

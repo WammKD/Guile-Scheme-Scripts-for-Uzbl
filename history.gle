@@ -1,0 +1,20 @@
+#!/usr/bin/guile
+!#
+(use-modules (jaft functs))
+
+(define args (command-line))
+(define counter1 (!! args 3))
+(define did_back (string->number (!! args 4)))
+(define did_forward (string->number (!! args 5)))
+
+(if (zero? did_back did_forward)
+    (let* ([histInput                         (str (!! args 1) #\newline)]
+           [fileN                                             (!! args 2)]
+           [counter                             (string->number counter1)]
+           [data                                       (read-lines fileN)]
+           [new       (lst (rev (: (rev data) counter)) (: histInput 20))])
+      (print-lines new fileN)
+      (print "set counter = 0"))
+  (print (str "set counter = " counter1)))
+
+           
